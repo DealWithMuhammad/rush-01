@@ -1,86 +1,88 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   test.c                                             :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: muhahmad <muhahmad@student.42kl.edu.my>    +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/03/24 15:20:43 by muhahmad          #+#    #+#             */
-/*   Updated: 2024/03/24 15:20:47 by muhahmad         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include <unistd.h>
 #include <stdlib.h>
 
 #define N 4
 
-// Function to check if a number can be placed at the given position
-int isSafe(int *grid, int row, int col, int num) {
-    for (int x = 0; x <= 3; x++)
-        if (*(grid + row*N + x) == num)
+// Function to check if a number can be placed at grid[row][col]
+int isSafe(int grid[N][N], int row, int col, int num) {
+    int x = 0;
+    while (x < N) {
+        if (grid[row][x] == num || grid[x][col] == num) {
             return 0;
-    for (int x = 0; x <= 3; x++)
-        if (*(grid + x*N + col) == num)
-            return 0;
+        }
+        x++;
+    }
     return 1;
 }
 
 // Function to print the grid
-void printGrid(int *grid) {
-    char output[2];
-    for (int row = 0; row < N; row++) {
-        for (int col = 0; col < N; col++) {
-            output[0] = '0' + *(grid + row*N + col);
+void printGrid(int grid[N][N]) {
+    char output[3];
+    int row = 0;
+    while (row < N) {
+        int col = 0;
+        while (col < N) {
+            output[0] = '0' + grid[row][col];
             output[1] = ' ';
-            write(1, output, 2);
+            output[2] = '\0';
+            write(1, output, 2); // Write number and space
+            col++;
         }
-        write(1, "\n", 1);
+        write(1, "\n", 1); // Write newline
+        row++;
     }
 }
 
-// Function to solve the puzzle using backtracking
-int solveSkyscraper(int *grid, int row, int col) {
-    if (row == N - 1 && col == N)
+// Recursive function to solve the Skyscraper puzzle
+int solveSkyscraper(int grid[N][N], int row, int col) {
+    if (row == N - 1 && col == N) {
         return 1;
+    }
     if (col == N) {
         row++;
         col = 0;
     }
-    if (*(grid + row*N + col) > 0)
+    if (grid[row][col] > 0) {
         return solveSkyscraper(grid, row, col + 1);
-    for (int num = 1; num <= N; num++) {
-        if (isSafe(grid, row, col, num) == 1) {
-            *(grid + row*N + col) = num;
-            if (solveSkyscraper(grid, row, col + 1) == 1)
-                return 1;
-        }
-        *(grid + row*N + col) = 0;
     }
-    return 0;
+    int num = 1;
+    while (num <= N) {
+        if (isSafe(grid, row, col, num)) {
+            grid[row][col] = num;
+            if (solveSkyscraper(grid, row, col + 1)) {
+                return 1;
+            }
+            grid[row][col] = 0; // Backtrack
+        }
+        num++;
+    }
+    return 0; // No solution found
 }
 
 int main(int argc, char *argv[]) {
-    int *grid = malloc(N * N * sizeof(int));
-    for (int i = 0; i < N*N; i++)
-        *(grid + i) = 0;
-
-    // Add code to take clues as input from the user
-    int *clues = malloc(4 * N * sizeof(int));
-    char buffer[2];
-    for (int i = 0; i < 4*N; i++) {
-        read(0, buffer, 2);
-        *(clues + i) = buffer[0] - '0';
+    if (argc != 2) {
+        write(1, "Usage: ./rush-01 \"16-digit input\"\n", 34);
+        return 1;
     }
 
-    if (solveSkyscraper(grid, 0, 0) == 0) {
+    int grid[N][N] = {0};
+    int clues[4 * N];
+    int i = 0;
+    while (i < 4 * N) {
+        if (argv[1][i] >= '1' && argv[1][i] <= '4') {
+            clues[i] = argv[1][i] - '0';
+        } else {
+            write(1, "Invalid input\n", 14);
+            return 1;
+        }
+        i++;
+    }
+
+    if (!solveSkyscraper(grid, 0, 0)) {
         write(1, "No solution exists\n", 18);
-        free(grid);
-        free(clues);
         return 0;
     }
     printGrid(grid);
-    free(grid);
-    free(clues);
     return 0;
 }
+
